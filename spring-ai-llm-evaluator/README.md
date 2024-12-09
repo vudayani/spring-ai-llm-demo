@@ -14,17 +14,19 @@ This project leverages Spring AI for LLM integration and a Python-based evaluati
 	Hosts the endpoints and integrates with Spring AI for LLM access.
 - Python Evaluation Service:
 	- Evaluates responses and returns a score indicating their quality
-    - Runs as a Docker service, accessed via REST
-    For more information, check https://github.com/vudayani/DeepEvalTests
+    - Runs as a Docker service, accessed via REST endpoint
+
+    For more information, check https://github.com/vudayani/spring-ai-llm-demo/tree/main/llm-response-evaluator
 
 ## Key Features
 
 1. Code Generation Endpoint (/generateResponse)
 - Purpose: Generate responses using user-defined or default prompts
 - Functionality:
-   - Supports custom prompts for specific code or functionality
+   - Supports custom prompts
    - Provides sample JPA code for applications by default if no custom prompts are provided
-Models Supported: OpenAI, Anthropic
+
+	Models Supported: OpenAI, Anthropic
 
 2. Prompt Tuning Endpoint (/promptTuning)
 - Purpose: Fine-tune prompts by evaluating LLM responses
@@ -43,7 +45,7 @@ Models Supported: OpenAI, Anthropic
 2. Setup
 	1. Clone the repository:
 	```bash
-	git clone https://github.com/vudayani/spring-ai-llm-evaluator.git
+	git clone https://github.com/vudayani/spring-ai-llm-demo.git
 	cd spring-ai-llm-evaluator
 	```
 	2. Build and start the Spring Boot application:
@@ -51,13 +53,12 @@ Models Supported: OpenAI, Anthropic
 	mvn clean install
 	java -jar target/spring-ai-prompt-evaluator.jar
 	```
-	3. Clone and set up the Python evaluation service:
+	3. Set up the Python evaluation service:
 	```bash
-	git clone https://github.com/vudayani/DeepEvalTests.git
-	cd DeepEvalTests
+	cd llm-response-evaluator
 	```
 	5. Build and Run the Python evaluation service (Docker):
 	```bash
-	docker build -t deepeval-service .
-	docker run -p 8000:8000 -e <OPENAI_API_KEY> deepeval-service
+	docker build -t evaluation-service .
+	docker run -p 8000:8000 -e <OPENAI_API_KEY> evaluation-service
 	```

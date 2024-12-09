@@ -7,8 +7,8 @@ from deepeval.test_case import LLMTestCase
 def test_case():
     answer_relevancy_metric = AnswerRelevancyMetric(threshold=0.5, model="gpt-3.5-turbo", include_reason=True)
     test_case = LLMTestCase(
-        input="What sports are being included in the 2024 summer olympics",
-        # Replace this with the actual output from your LLM application
+        input="How can I buy tickets for the Olympic Games Paris 2024",
+        # Replace this with the actual output from your LLM
         actual_output="To buy tickets for the Olympic Games Paris 2024, you need to visit the official ticketing website. Tickets are available for spectators around the world exclusively on this platform.",
         retrieval_context=[
             "Q: How to buy tickets for the Olympic Games Paris 2024? A: Tickets for the Olympic Games Paris 2024 are available for spectators around the world only on the official ticketing website. To buy tickets, click here.",
