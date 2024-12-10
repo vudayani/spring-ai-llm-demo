@@ -1,5 +1,5 @@
 ## Evaluating LLM Responses with DeepEval: A Python-Based Framework
-In the first part of this blog series, we explored Spring AI, its setup, and how it simplifies interactions with large language models (LLMs) like OpenAI and Anthropic. In this second part, we dive into DeepEval, a Python-based framework designed to evaluate the quality and relevance of LLM responses. We’ll look at DeepEval’s capabilities, its metrics, and an evaluation endpoint implementd in the application. This endpoint can be called from other services by running it as a Docker service to assess LLM outputs against customizable criteria.
+In the first part of this blog series, we explored Spring AI, its setup, and how it simplifies interactions with large language models (LLMs) like OpenAI and Anthropic. In this second part, we dive into DeepEval, a Python-based framework designed to evaluate the quality and relevance of LLM responses. We’ll look at DeepEval’s capabilities, its metrics, and an evaluation endpoint implemented in the application. This endpoint can be called from other services by running it as a Docker service to assess LLM outputs against customizable criteria.
 
 ## What is DeepEval?
 
@@ -65,6 +65,7 @@ def test_case():
 
 
 2. **G-Eval Metric**
+
 The G-Eval Metric leverages chain-of-thought reasoning to evaluate LLM outputs against custom criteria. It’s particularly useful for nuanced and complex assessments requiring high accuracy.
 
 #### Test Case:

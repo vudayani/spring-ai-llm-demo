@@ -23,14 +23,14 @@ Integrating Spring AI into your application involves three simple steps:
 1. **Adding Dependencies**
 Include the necessary dependencies in your `pom.xml` for the LLM providers you intend to use:
 ```xml
-    <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
-	  </dependency>
-    <dependency>
-		<groupId>org.springframework.ai</groupId>
-		<artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
-	</dependency>
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-azure-openai-spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-anthropic-spring-boot-starter</artifactId>
+</dependency>
 ```
 
 2. **Configuring Properties**
@@ -57,15 +57,15 @@ spring:
 Lets see how to configure and call two different Large Language Models (OpenAI, Anthropic) using Spring AI.
 Define two ChatClient beans, one for each LLM provider:
 ```java
-    @Bean
-    public ChatClient openAIChatClient(OpenAiChatModel chatModel) {
-	    return ChatClient.create(chatModel);
-    }
+@Bean
+public ChatClient openAIChatClient(OpenAiChatModel chatModel) {
+	return ChatClient.create(chatModel);
+}
 
-	@Bean
-	public ChatClient anthropicChatClient(AnthropicChatModel chatModel) {
-		return ChatClient.create(chatModel);
-	}
+@Bean
+public ChatClient anthropicChatClient(AnthropicChatModel chatModel) {
+	return ChatClient.create(chatModel);
+}
 ```
 
 You can use a factory method to seamlessly switch between different LLMs dynamically. The `chatClientFactory` method `getChatClient` returns the appropriate chat client instance based on the provided model type:
@@ -102,7 +102,7 @@ That's all it takes to get started. You are now ready to interact with LLM model
 Now that the setup is complete, let's explore Spring AI's capabilities of interacting with multiple LLMs with an example. 
 
 We have a Code Generation Endpoint (`/generateResponse`) that accepts user input and generates a response based on the selected model.
-- If no custom prompt is provided, the application uses a default prompt to generate a sample JPA repository code
+- If no custom prompt is provided, the application uses a default prompt to generate a sample JPA code
 - When a custom prompt is supplied, the endpoint generates responses tailored to the user's input
 
 Here is the core snippet that interacts with different LLMs:
@@ -161,7 +161,7 @@ return chatClient.prompt()
             .entity(new ParameterizedTypeReference<List<Restaurant>>() {});
 ```
 
-By specifying the entity type which internally uses `BeanOutputConverter` to convert the raw response into a structured list of Restaurant objects, making it easy to use in your application.
+Specify the entity type which internally uses `BeanOutputConverter` to convert the raw response into a structured list of Restaurant objects, making it easy to use in your application.
 
 ![Output Parser Example](./images/openai-output-parser.png)
 

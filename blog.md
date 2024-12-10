@@ -11,20 +11,21 @@ Prompt tuning transforms how developers interact with LLMs, creating a feedback 
 ## Architecture Overview
 The integration involves:
 
-1. Spring AI Application: Acts as the main interface for interacting with LLMs and provides endpoints for generating responses.
-2. DeepEval Evaluation Service: A Python-based microservice that evaluates the quality of LLM responses.
-3. Integration Workflow: Spring AI sends prompts and responses to the DeepEval service for evaluation, receives feedback, and optionally suggests prompt refinements.
+1. Spring AI Application: Acts as the main interface for interacting with LLMs and provides endpoints for generating responses
+2. DeepEval Evaluation Service: A Python-based microservice that evaluates the quality of LLM responses, returning a score and feedback 
+
+Integration Workflow: Spring AI Application handles requests to the `/promptTuning` endpoint, interacting with selected LLMs to generate responses. The prompts and responses are sent to the DeepEval service for evaluation. If the response quality is below a threshold, the LLM is called again to provide an improvised prompt. 
 
 ## Prompt Tuning Endpoint
 
-The /promptTuning endpoint combines the capabilities of Spring AI and DeepEval to evaluate LLM responses and refine prompts iteratively.
+The `/promptTuning` endpoint combines the capabilities of Spring AI and DeepEval to evaluate LLM responses and refine prompts iteratively.
 Provides feedback and suggestions for improving prompts when response quality is below a threshold by leveraging the LLM itself to generate suggestions for improvement.
 
 ## Prompt Tuning Example
 By experimenting with custom inputs, we can explore how prompts influence LLM responses and use evaluation feedback to iteratively improve them.
 
 #### Initial Request
-Below is a sample request (userPrompt and systemPrompt) to create a 2-day itinerary for Switzerland. The evaluationCriteria is list of steps provided to verify if the llm response is meets the criteria.
+Below is a sample request (userPrompt and systemPrompt) to create a 2-day itinerary for Switzerland. The evaluationCriteria is list of steps provided to verify if the llm response meets the criteria.
 
 ```bash
 {
@@ -46,7 +47,7 @@ Here’s what the endpoint returns:
 
 ```bash
 {
-"llmResponse":Switzerland is a beautiful country with a lot to offer, even if you only have two days. Here's a suggested itinerary that lets you experience some of the highlights:
+"llmResponse":"Switzerland is a beautiful country with a lot to offer, even if you only have two days. Here's a suggested itinerary that lets you experience some of the highlights:
 
 
 ### Day 1: Zurich and Lucerne
@@ -87,7 +88,7 @@ Here’s what the endpoint returns:
 - **Dinner:** Choose a cozy restaurant to unwind and reflect on your day. Try some local Swiss chocolates as a sweet ending.
 
 
-This itinerary provides a mix of urban exploration and breathtaking natural beauty, showcasing some of the best Switzerland has to offer in a short time. Safe travels and enjoy your trip!,
+This itinerary provides a mix of urban exploration and breathtaking natural beauty, showcasing some of the best Switzerland has to offer in a short time. Safe travels and enjoy your trip!",
    "evalResponse": {
        "score": "0.647228993149907",
        "reason": "The itinerary includes places to visit in sequence with some operational timings like train travel. However, it lacks specific suggestions for accommodation and food places, only offering general dining recommendations"
@@ -127,7 +128,7 @@ Next, let's use the refined prompt to make another request. Here's the updated i
 
 ```bash
 {
-    "llmResponse":Certainly! Here's a well-rounded 2-day itinerary for your trip to Switzerland, focusing on the picturesque and culturally rich region of Lucerne and nearby areas. This itinerary will include a blend of natural beauty, cultural experiences, and Swiss culinary delights.
+    "llmResponse":"Certainly! Here's a well-rounded 2-day itinerary for your trip to Switzerland, focusing on the picturesque and culturally rich region of Lucerne and nearby areas. This itinerary will include a blend of natural beauty, cultural experiences, and Swiss culinary delights.
 
 ### Day 1: Exploring Lucerne
 
@@ -217,7 +218,7 @@ Next, let's use the refined prompt to make another request. Here's the updated i
 - **Weather:** Check the weather forecast, especially for mountain excursions, and dress in layers as conditions can change rapidly.
 - **Language:** While German is the primary language in Lucerne, English is widely spoken, especially in tourist areas.
 
-Enjoy your trip to Switzerland! If you have any further questions or need adjustments to this itinerary, feel free to ask.,
+Enjoy your trip to Switzerland! If you have any further questions or need adjustments to this itinerary, feel free to ask.",
     "evalResponse": {
         "score": "0.9977022630179773",
         "reason": "The output includes a detailed 2-day itinerary with a sequence of must-visit places and their operating hours. It provides accommodation suggestions, such as Hotel des Balances and Hotel Schweizerhof Luzern, and recommends dining venues like Restaurant Fritschi and Zunfthausrestaurant Pfistern that offer Swiss cuisine."
