@@ -46,8 +46,8 @@ public class ChatController {
 	 * @throws IOException
 	 */
 
-	@PostMapping("/generateResponse")
-	public ResponseEntity<String> generateResponse(@RequestParam(value = "model", defaultValue = "openai") String model,
+	@PostMapping("/askLlm")
+	public ResponseEntity<String> fetchLlmResponse(@RequestParam(value = "model", defaultValue = "openai") String model,
 			@RequestBody(required = false) PromptRequest promptRequest) throws IOException {
 		if (!SUPPORTED_MODELS.contains(model.toLowerCase())) {
 			return ResponseEntity.badRequest()

@@ -25,8 +25,8 @@ public class RestaurantController {
 		this.chatClientFactory = chatClientFactory;
 	}
 	
-	@PostMapping("/generateStructuredResponse")
-	public List<Restaurant> generateStructuredResponse(@RequestParam(value = "model", defaultValue = "openai") String model,
+	@PostMapping("/fetchRestaurants")
+	public List<Restaurant> fetchRestaurants(@RequestParam(value = "model", defaultValue = "openai") String model,
 			@RequestBody(required = false) PromptRequest promptRequest) throws IOException {
 		ChatClient chatClient = chatClientFactory.getChatClient(model);
 		return chatClient.prompt()

@@ -6,8 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -57,7 +55,7 @@ public class LlmEvaluationService {
 		String llmResp = chatResp.getResult().getOutput().getContent();
 		LlmEvaluationResponse evaluationResult = evaluateResponse(promptTuningRequest, llmResp);
 		
-		if (Double.parseDouble(evaluationResult.score()) < 0.7) {
+		if (Double.parseDouble(evaluationResult.score()) < 0.8) {
 			PromptRequest improvementPromptRequest = new PromptRequest(
 					String.format(improvementPromptMessage, promptTuningRequest.userPrompt(),
 							promptTuningRequest.systemPrompt(),
