@@ -1,27 +1,157 @@
 # Spring AI with DeepEval: Prompt Tuning and Automated Evaluation
 In the previous parts of this blog series, we explored Spring AI, a Java framework that simplifies LLM integration, and DeepEval, a Python-based evaluation framework for assessing LLM responses. In this final part, we demonstrate how to integrate DeepEval with Spring AI to enable prompt tuning and automated response evaluation using a sample application.
 
-## Why Prompt Tuning
-Prompt tuning transforms how developers interact with LLMs, creating a feedback loop that significantly improves response quality over time.
+## What is Prompt Tuning?
 
-- Enhance Output Quality: Ensure responses are accurate, relevant, and aligned with expectations
-- Boost Model Efficiency: Minimize unnecessary retries or manual intervention by crafting well-defined prompts
-- Compare Model Performance: Use evaluation metrics to determine how different LLMs respond to the same prompt, enabling data-driven decisions
+Prompt tuning is the process of iteratively refining the input prompts provided to an LLM to improve the quality of its responses. This involves:
+- Generating responses using initial prompts
+- Evaluating the responses against defined criteria (e.g., relevance, accuracy, clarity)
+- Iteratively enhancing prompts based on feedback
+
+This feedback loop improves response quality while reducing retries with well-crafted prompts. It also provides insights into how different LLMs respond to the same prompt, enabling data-driven decisions.
 
 ## Architecture Overview
 The integration involves:
 
-1. Spring AI Application: Acts as the main interface for interacting with LLMs and provides endpoints for generating responses
-2. DeepEval Evaluation Service: A Python-based microservice that evaluates the quality of LLM responses, returning a score and feedback 
+1. **Spring AI Application**: This acts as the main interface for interacting with LLMs and provides endpoints for generating and evaluating responses
+2. **DeepEval Evaluation Service**: A Python-based microservice that evaluates the quality of LLM responses. It assigns a score and provides actionable feedback based on evaluation criteria, which the Spring AI Application uses to refine prompts.
 
-Integration Workflow: Spring AI Application handles requests to the `/promptTuning` endpoint, interacting with selected LLMs to generate responses. The prompts and responses are sent to the DeepEval service for evaluation. If the response quality is below a threshold, the LLM is called again to provide an improvised prompt. 
+**Integration Workflow**: 
+
+1. User Interaction: The user sends a request to the `/promptTuning` endpoint, providing a user prompt, a system prompt, and an evaluation criteria
+
+2. Response Generation: The Spring AI application generates a response using the selected LLM model
+
+3. Response Evaluation: The application sends the generated response, along with the original prompt, to the DeepEval service for evaluation
+
+4. Quality Check: If the evaluation score is below a threshold, the application uses the LLM itself to generate improved prompts
+
+To demonstrate the iterative prompt tuning process, I’ve implemented it as a REST endpoint, making it easier to test. 
 
 ## Prompt Tuning Endpoint
 
 The `/promptTuning` endpoint combines the capabilities of Spring AI and DeepEval to evaluate LLM responses and refine prompts iteratively.
-Provides feedback and suggestions for improving prompts when response quality is below a threshold by leveraging the LLM itself to generate suggestions for improvement.
+
+Here’s the implementation:
+
+```java
+@PostMapping("/promptTuning")
+public ResponseEntity<?> promptTuning(@RequestParam(value = "model", defaultValue = "openai") String model,
+			@RequestBody(required = false) PromptTuningRequest promptTuningRequest) throws IOException {
+		
+		if (!SUPPORTED_MODELS.contains(model.toLowerCase())) {
+			return ResponseEntity.badRequest()
+	                .body("Invalid modelType. Supported models are: " + String.join(", ", SUPPORTED_MODELS));
+		}
+		
+		if(promptTuningRequest == null) {
+			promptTuningRequest = new PromptTuningRequest("add jpa functionality",
+					sbPromptTemplate.getContentAsString(Charset.defaultCharset()), null);
+		}
+
+		return ResponseEntity.ok(llmEvaluationService.evaluateLLMResponse(promptTuningRequest, model));
+
+	}
+```
+
+#### What This Code Does:
+
+1. Model Validation: The endpoint checks if the provided model is supported. If not, it returns an error response
+
+2. Default Prompt: If no prompt is provided in the request, a default prompt is used
+
+3. Prompt Evaluation: The endpoint calls the LlmEvaluationService to evaluate the LLM response and potentially improve the prompts if necessary
+
+### Service Implementation
+
+The core logic resides in the LlmEvaluationService:
+
+```java
+@Service
+public class LlmEvaluationService {
+	
+	private final ChatClientFactory chatClientFactory;
+
+	private final RestClient restClient;
+	
+	private final ConfigProperties props;
+	
+	private String improvementPromptMessage = """
+			The following prompt did not meet the evaluation criteria:
+			User Prompt: %s\n
+			System Prompt: %s\n\n
+			Evaluation Criteria: \n%s\n\n
+			Please suggest improvements to both **user prompt** and the **system prompt** to better satisfy the evaluation criteria. Ensure the refined prompts are detailed, structured, and specific enough to guide the LLM in producing high-quality responses.
+			""";
+
+	public LlmEvaluationService(ChatClientFactory chatClientFactory, ConfigProperties props) {
+		this.chatClientFactory = chatClientFactory;
+		this.props = props;
+		this.restClient = RestClient.create(this.props.apiUrl());
+	}
+
+public ChatResponse getLlmModelResponse(PromptRequest promptRequest, String model) throws IOException {
+		ChatClient chatClient = chatClientFactory.getChatClient(model);
+		return chatClient.prompt()
+			            .system(s -> s.text(promptRequest.systemPrompt()))
+			            .user(u -> u.text(promptRequest.userPrompt()))
+			            .call()
+			            .chatResponse();
+    }
+
+public PromptTuningResult evaluateLLMResponse(PromptTuningRequest promptTuningRequest, String model) throws IOException {
+		PromptRequest promptRequest = new PromptRequest(promptTuningRequest.userPrompt(), promptTuningRequest.systemPrompt());
+		ChatResponse chatResp = getLlmModelResponse(promptRequest, model);
+		String llmResp = chatResp.getResult().getOutput().getContent();
+		LlmEvaluationResponse evaluationResult = evaluateResponse(promptTuningRequest, llmResp);
+		
+		if (Double.parseDouble(evaluationResult.score()) < 0.7) {
+			PromptRequest improvementPromptRequest = new PromptRequest(
+					String.format(improvementPromptMessage, promptTuningRequest.userPrompt(),
+							promptTuningRequest.systemPrompt(),
+							String.join("\n", promptTuningRequest.evaluationCriteria())),
+			        "Use prompt engineering techniques to deliver improved prompts that guide the LLM to produce high-quality and relevant results that meet the evaluation criteria. Ensure the system prompt provides clear role guidance.");
+			System.out.println("improved prompt req " + improvementPromptRequest.toString());
+			
+	        String improvementSuggestion = getLlmModelResponse(
+	        		improvementPromptRequest, model)
+	                .getResult().getOutput().getContent();
+	        return new PromptTuningResult(llmResp, evaluationResult, improvementSuggestion);
+	    }
+		return new PromptTuningResult(llmResp, evaluationResult, null);
+	}
+	
+private LlmEvaluationResponse evaluateResponse(PromptTuningRequest promptTuningRequest, String llmResp) throws IOException {
+		try {
+			LlmEvaluationRequest llmEvalReq = buildEvalRequest(promptTuningRequest, llmResp);
+			return restClient.post().uri("evaluate/").body(llmEvalReq).retrieve().body(LlmEvaluationResponse.class);
+		} catch (Exception e) {
+			logger.error("Evaluation service error: " + e.getMessage());
+			throw new IOException("Evaluation failed. Please try again later.", e);
+		}
+	}
+	
+private LlmEvaluationRequest buildEvalRequest(PromptTuningRequest promptTuningRequest, String llmResponse) {
+	    return new LlmEvaluationRequest(
+	        "User Prompt: "+  promptTuningRequest.userPrompt() +"\n System Prompt: " + promptTuningRequest.systemPrompt() ,
+	        llmResponse,
+	        null,
+	        promptTuningRequest.evaluationCriteria()
+	    );
+	}
+```
+
+#### What This Code Does:
+1. Generate Response: It interacts with the LLM to generate a response with the provided user and system prompts
+
+2. Evaluate Response: It sends the response and the prompts to the DeepEval service for evaluation, receiving a score and feedback
+
+3. Check Quality: If the score is below 0.8, it triggers the refinement process
+
+4. Prompt Refinement: The method uses an improvement prompt template to generate suggestions for better user and system prompts
 
 ## Prompt Tuning Example
+
 By experimenting with custom inputs, we can explore how prompts influence LLM responses and use evaluation feedback to iteratively improve them.
 
 #### Initial Request
@@ -424,40 +554,10 @@ The solution now includes edge case handling, exception management, and well-doc
 
 In this era, where prompt engineering is pivotal to harnessing the potential of LLMs - the process of refining prompts and re-evaluating ensures continuous improvement. It also helps us evaluate how different LLMs perform for the same prompt.
 
-## Spring AI Evaluator Interface
-
-The Spring AI project provides an Evaluator API that offers basic strategies to evaluate model responses within the Spring Boot application itself, offering an alternative to Python-based frameworks. Although these strategies are currently limited to RelevancyEvaluator and FactCheckingEvaluator, they provide a good starting point for evaluating LLM responses. The project continues to evolve, so it's worth giving it a try.
-
-In my project, I have used the RelevancyEvaluator. This evaluator uses the input (userText) and the AI model’s output (chatResponse) to check if the LLM response is relevant and not hallucinated.
-
-Here is an example of a JUnit test using the RelevancyEvaluator:
-
-```java
-@Test
-public void evalOpenAiLlmModel() throws IOException {
-    PromptRequest promptReq = new PromptRequest("add jpa functionality", "Your task is to create Java source code for a Spring Boot application");
-
-    String modelResponse = llmEvaluationService.getLlmModelResponse(promptReq, "openai").getResult().getOutput().getContent();
-    var relevancyEvaluator = new RelevancyEvaluator(ChatClient.builder(openAiChatModel));
-    Assert.notNull(modelResponse, "LLM model response should not be null");
-
-    EvaluationRequest evaluationRequest = new EvaluationRequest(
-        promptReq.userPrompt(),
-        modelResponse
-    );
-
-    EvaluationResponse evaluationResponse = relevancyEvaluator.evaluate(evaluationRequest);
-
-    assertTrue(evaluationResponse.isPass(),
-        "Response is not relevant to the asked question.\n" +
-        "Question: " + promptReq + "\n" +
-        "Response: " + modelResponse
-    );
-}
-```
-
 ## Conclusion
 
 In this blog series, we explored the capabilities of Spring AI and DeepEval, and demonstrated how to combine the two for prompt tuning and automated response evaluation.  
 This project serves as an example of how Spring AI can enable rapid prototyping and learning, showcasing its potential for real-world applications.
 If you’re a Java developer curious about the LLM space, I encourage you to explore Spring AI and see how it can transform your workflow.
+
+To explore this project in more detail, visit the [GitHub repository](https://github.com/vudayani/spring-ai-llm-demo)
